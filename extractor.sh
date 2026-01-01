@@ -133,6 +133,7 @@ filename="$(basename "${romzip}%%.*}")"
 PARTITIONS="super system vendor cust odm oem factory product xrom modem dtbo dtb boot recovery tz systemex oppo_product preload_common system_ext system_other opproduct reserve india my_preload my_odm my_stock my_operator my_country my_product my_company my_engineering my_heytap my_custom my_manifest my_carrier my_region my_bigball my_version special_preload vendor_dlkm odm_dlkm system_dlkm init_boot vendor_kernel_boot vendor_boot mi_ext boot-debug vendor_boot-debug hw_product product_h preas preavs tvconfig tvservice linux_rootfs_a factory_a 3rd_a 3rd_rw boot_gki boot_xts my_reserve boot_oplus"
 EXT4PARTITIONS="system vendor cust odm oem factory product xrom systemex oppo_product preload_common hw_product product_h preas preavs"
 OTHERPARTITIONS="tz.mbn:tz tz.img:tz modem.img:modem NON-HLOS:modem boot-verified.img:boot dtbo-verified.img:dtbo"
+FIRMWAREFILES="bluetooth.img:BTFM.bin modem.img:NON-HLOS.bin abl.img:abl.elf aop.img:aop.mbn cpucp.img:cpucp.elf devcfg.img:devcfg.mbn dsp.img:dspso.bin fsg.img:fsg.mbn hyp.img:hyp.mbn keymaster.img:keymaster.mbn logo.img:logo.bin prov.img:prov64.mbn qupfw.img:qupfw.elf shrm.img:shrm.elf storsec.img:storsec.mbn tz.img:tz.mbn uefisecapp.img:uefi_sec.mbn xbl_config.img:xbl_config.elf xbl.img:xbl_s.melf"
 
 # Set different directories' path
 outdir="${LOCALDIR}/out"
@@ -700,6 +701,16 @@ if 7z l -ba "${romzip}" 2>/dev/null | grep -q radio.img; then
         rm -rf "${PWD}"/radio.img.sparse
     fi
 fi
+
+for firmware in $FIRMWAREFILES; do
+    IN=$(echo "$firmware" | cut -f 1 -d ":")
+    OUT=$(echo "$firmware" | cut -f 2 -d ":")
+
+    if [ -f "${tmpdir}/${IN}" ]; then
+        ## Extract firmware file(s)
+        mv "${tmpdir}/${IN}" "${outdir}/${OUT}"
+    fi
+done
 
 if [[ $(ls -A "${outdir}" | wc -l ) -eq 1 ]]; then
     echo "[FAILED] '${outdir}' is empty.
