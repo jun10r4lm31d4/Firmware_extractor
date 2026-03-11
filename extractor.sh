@@ -38,9 +38,6 @@ superimage() {
         ($lpunpack --partition="$partition"_a super.img.raw || $lpunpack --partition="$partition" super.img.raw) 2>/dev/null
         if [ -f "$partition"_a.img ]; then
             mv "$partition"_a.img "$partition".img
-        elif [ -f "$romzip" ]; then
-            foundpartitions=$(7z l -ba "${romzip}" | rev | gawk '{ print $1 }' | rev | grep "$partition".img)
-            7z e -y "${romzip}" "$foundpartitions" dummypartition 2>/dev/null >> "$tmpdir"/zip.log
         fi
     done
     rm -rf super.img*
