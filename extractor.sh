@@ -160,6 +160,13 @@ fi
 
 MAGIC=$(head -c12 "${romzip}" | tr -d '\0')
 
+# Extract partition(s) from zip archive first
+if [[ "$(file -b --mime-type "$romzip")" == "application/zip" ]]; then
+    for partition in $PARTITIONS; do
+        7z e -y "${romzip}" "${partition}.img" dummypartition 2>/dev/null >> "$tmpdir"/zip.log
+    done
+fi
+
 # File is '.ozip'
 if [[ "${MAGIC}" == "OPPOENCRYPT!" ]] || [[ "${romzipext}" == "ozip" ]]; then
     # Function to archive directories to a fake image.
@@ -446,7 +453,7 @@ elif 7z l -ba "${romzip}" 2>/dev/null | grep system | grep chunk | grep -qv ".*\
 elif 7z l -ba "${romzip}" 2>/dev/null | grep -q "super.img"; then
     echo "[INFO] 'super.img' detected"
 
-    # Extract detected image(s)    
+    # Extract detected image(s)
     FOUND=$(7z l -ba "${romzip}" | gawk '{ print $NF }' | grep "super.img" | tr '\n' ' ')
     7z x -y "${romzip}" ${FOUND} >> "$tmpdir"/zip.log
 
