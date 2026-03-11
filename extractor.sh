@@ -677,6 +677,7 @@ done
 
 # Specifically check if input is 'radio.img'
 if 7z l -ba "${romzip}" 2>/dev/null | grep -q radio.img; then
+    RADIOPARTITIONS="fsg.mbn NON-HLOS.bin"
     ## Extract 'radio.img' from archive'
     echo "[INFO] Extracting 'radio.img'..."
     7z x "${romzip}" radio.img -o"${PWD}" >> "$tmpdir"/zip.log
@@ -686,18 +687,41 @@ if 7z l -ba "${romzip}" 2>/dev/null | grep -q radio.img; then
         ## Extract 'radio.img.sparse'
         "${star}" "${PWD}/radio.img" "${PWD}" 2>/dev/null
 
-        ## Delete everything that's not 'NON-HLOS.bin' and 'fsg.mbn'
-        find "${PWD}/" -type f ! -name 'NON-HLOS.bin' -and ! -name 'fsg.mbn' -delete
-        mv "${PWD}"/fsg.mbn "${outdir}"/fsg.mbn
+        ## Extract sparse images if exist before moving to '${outdir}'
+        for partition in $RADIOPARTITIONS; do
+            magic=$(xxd -p -l 4 "${PWD}/${partition}" 2>/dev/null)
+            if [ "$magic" == "3aff26ed" ]; then
+                mv "${PWD}/${partition}" "${PWD}/${partition}.sparse"
+                ${simg2img} "${PWD}/${partition}.sparse" "${outdir}/${partition}" 2>/dev/null
+            else
+                mv "${PWD}/${partition}" "${outdir}/${partition}"
+            fi
+        done
+    fi
+fi
 
-        ## Move 'NON-HLOS.bin' to 'radio.img.sparse'
-        mv "${PWD}/NON-HLOS.bin" "${PWD}/radio.img.sparse"
+# Specifically check if input is 'bootloader.img'
+if 7z l -ba "${romzip}" 2>/dev/null | grep -q bootloader.img; then
+    BOOTLOADERPARTITIONS="abl.elf aop.mbn cpucp.elf devcfg.mbn hyp.mbn keymaster.mbn prov64.mbn qupfw.elf shrm.elf storsec.mbn tz.mbn uefi_sec.mbn xbl_config.elf xbl_s.melf"
+    ## Extract 'bootloader.img' from archive'
+    echo "[INFO] Extracting 'bootloader.img'..."
+    7z x "${romzip}" bootloader.img -o"${PWD}" >> "$tmpdir"/zip.log
 
-        ## Convert from sparse to RAW
-        ${simg2img} "${PWD}/radio.img.sparse" "${outdir}/radio.img" 2>/dev/null
+    ## Check if this comes from motorola
+    if [[ $(head -c15 "${PWD}"/bootloader.img) == "SINGLE_N_LONELY" ]]; then
+        ## Extract 'bootloader.img.sparse'
+        "${star}" "${PWD}/bootloader.img" "${PWD}" 2>/dev/null
 
-        ## Remove old sparsed image
-        rm -rf "${PWD}"/radio.img.sparse
+        ## Extract sparse images if exist before moving to '${outdir}'
+        for partition in $BOOTLOADERPARTITIONS; do
+            magic=$(xxd -p -l 4 "${PWD}/${partition}" 2>/dev/null)
+            if [ "$magic" == "3aff26ed" ]; then
+                mv "${PWD}/${partition}" "${PWD}/${partition}.sparse"
+                ${simg2img} "${PWD}/${partition}.sparse" "${outdir}/${partition}" 2>/dev/null
+            else
+                mv "${PWD}/${partition}" "${outdir}/${partition}"
+            fi
+        done
     fi
 fi
 
